@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
@@ -27,6 +28,27 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-[#050816] text-white overflow-hidden">
+
+      <header className="fixed top-0 left-0 w-full z-40 border-b border-white/10 bg-black/30 backdrop-blur-xl">
+
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+
+          <h1 className="text-2xl font-black">
+
+            Flos Tools
+
+          </h1>
+
+          <Link
+            href="/admin"
+            className="px-5 py-3 rounded-2xl bg-gradient-to-r from-cyan-400 to-purple-500 font-bold"
+          >
+            Admin Login
+          </Link>
+
+        </div>
+
+      </header>
 
       <section className="relative min-h-screen flex items-center justify-center px-6">
 
