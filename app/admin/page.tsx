@@ -47,11 +47,13 @@ export default function AdminPage() {
     })
 
     if (error) {
-      return alert(error.message)
+      alert(error.message)
+      return
     }
 
     if (data.user.email !== 'def4lt123@gmail.com') {
-      return alert('Kein Admin')
+      alert('Kein Admin')
+      return
     }
 
     setUser(data.user)
@@ -66,10 +68,12 @@ export default function AdminPage() {
 
   async function fetchPosts() {
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('posts')
       .select('*')
       .order('id', { ascending: false })
+
+    console.log(error)
 
     if (data) {
       setPosts(data)
@@ -78,62 +82,93 @@ export default function AdminPage() {
 
   async function createPost() {
 
-    if (!title || !description) {
-      return alert('Bitte Titel und Beschreibung ausfüllen')
-    }
+    try {
 
-    let imageUrl = ''
-    let fileUrl = ''
+      if (!title || !description) {
+        alert('Bitte Titel und Beschreibung ausfüllen')
+        return
+      }
 
-    if (image) {
+      let imageUrl = ''
+      let fileUrl = ''
 
-      const imageName = `${Date.now()}-${image.name}`
+      if (image) {
 
-      await supabase.storage
-        .from('images')
-        .upload(imageName, image)
+        const imageName = `${Date.now()}-${image.name}`
 
-      const { data } = supabase.storage
-        .from('images')
-        .getPublicUrl(imageName)
+        const imageUpload = await supabase.storage
+          .from('images')
+          .upload(imageName, image)
 
-      imageUrl = data.publicUrl
-    }
+        console.log('IMAGE UPLOAD', imageUpload)
 
-    if (file) {
-
-      const fileName = `${Date.now()}-${file.name}`
-
-      await supabase.storage
-        .from('files')
-        .upload(fileName, file)
-
-      const { data } = supabase.storage
-        .from('files')
-        .getPublicUrl(fileName)
-
-      fileUrl = data.publicUrl
-    }
-
-    await supabase
-      .from('posts')
-      .insert([
-        {
-          title,
-          description,
-          image_url: imageUrl,
-          file_url: fileUrl
+        if (imageUpload.error) {
+          alert(imageUpload.error.message)
+          return
         }
-      ])
 
-    setTitle('')
-    setDescription('')
-    setImage(null)
-    setFile(null)
+        const imageData = supabase.storage
+          .from('images')
+          .getPublicUrl(imageName)
 
-    fetchPosts()
+        imageUrl = imageData.data.publicUrl
+      }
 
-    alert('Post erstellt')
+      if (file) {
+
+        const fileName = `${Date.now()}-${file.name}`
+
+        const fileUpload = await supabase.storage
+          .from('files')
+          .upload(fileName, file)
+
+        console.log('FILE UPLOAD', fileUpload)
+
+        if (fileUpload.error) {
+          alert(fileUpload.error.message)
+          return
+        }
+
+        const fileData = supabase.storage
+          .from('files')
+          .getPublicUrl(fileName)
+
+        fileUrl = fileData.data.publicUrl
+      }
+
+      const insert = await supabase
+        .from('posts')
+        .insert([
+          {
+            title,
+            description,
+            image_url: imageUrl,
+            file_url: fileUrl
+          }
+        ])
+
+      console.log('INSERT', insert)
+
+      if (insert.error) {
+        alert(insert.error.message)
+        return
+      }
+
+      alert('Post erstellt')
+
+      setTitle('')
+      setDescription('')
+      setImage(null)
+      setFile(null)
+
+      fetchPosts()
+
+    } catch (err) {
+
+      console.log(err)
+
+      alert('Fehler beim Upload')
+    }
   }
 
   async function deletePost(id: number) {
@@ -142,10 +177,12 @@ export default function AdminPage() {
 
     if (!confirmed) return
 
-    await supabase
+    const result = await supabase
       .from('posts')
       .delete()
       .eq('id', id)
+
+    console.log(result)
 
     fetchPosts()
   }
