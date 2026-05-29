@@ -6,7 +6,12 @@ import { supabase } from '../../lib/supabase'
 
 export default function AdminPage() {
 
+  const [loading, setLoading] = useState(true)
+
   const [user, setUser] = useState<any>(null)
+
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -31,19 +36,32 @@ export default function AdminPage() {
       setUser(data.user)
     }
 
+    setLoading(false)
   }
 
   async function login() {
 
-    const email = prompt('Admin Email')
-
-    if (!email) return
-
-    await supabase.auth.signInWithOtp({
-      email
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
     })
 
-    alert('Login Link wurde per Mail gesendet.')
+    if (error) {
+      return alert(error.message)
+    }
+
+    if (data.user.email !== 'def4lt123@gmail.com') {
+      return alert('Kein Admin')
+    }
+
+    setUser(data.user)
+  }
+
+  async function logout() {
+
+    await supabase.auth.signOut()
+
+    location.reload()
   }
 
   async function fetchPosts() {
@@ -56,7 +74,6 @@ export default function AdminPage() {
     if (data) {
       setPosts(data)
     }
-
   }
 
   async function createPost() {
@@ -133,6 +150,15 @@ export default function AdminPage() {
     fetchPosts()
   }
 
+  if (loading) {
+
+    return (
+      <main className="min-h-screen bg-[#050816] text-white flex items-center justify-center">
+        Loading...
+      </main>
+    )
+  }
+
   if (!user) {
 
     return (
@@ -140,23 +166,43 @@ export default function AdminPage() {
       <main className="min-h-screen bg-[#050816] text-white flex items-center justify-center p-6">
 
         <motion.div
-          initial={{ opacity: 0, y: 80 }}
+          initial={{ opacity: 0, y: 60 }}
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-10"
         >
 
-          <h1 className="text-5xl font-black mb-8 text-center">
+          <h1 className="text-5xl font-black mb-10 text-center">
 
             Admin Login
 
           </h1>
 
-          <button
-            onClick={login}
-            className="w-full py-5 rounded-2xl bg-gradient-to-r from-cyan-400 to-purple-500 text-xl font-bold"
-          >
-            Login starten
-          </button>
+          <div className="space-y-5">
+
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full p-5 rounded-2xl bg-black/30 border border-white/10 outline-none"
+            />
+
+            <input
+              type="password"
+              placeholder="Passwort"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-5 rounded-2xl bg-black/30 border border-white/10 outline-none"
+            />
+
+            <button
+              onClick={login}
+              className="w-full py-5 rounded-2xl bg-gradient-to-r from-cyan-400 to-purple-500 text-xl font-bold"
+            >
+              Login
+            </button>
+
+          </div>
 
         </motion.div>
 
@@ -169,20 +215,33 @@ export default function AdminPage() {
 
     <main className="min-h-screen bg-[#050816] text-white p-5 md:p-10">
 
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
 
-        <h1 className="text-5xl md:text-7xl font-black mb-12">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-12">
 
-          Admin Dashboard
+          <h1 className="text-5xl md:text-7xl font-black">
 
-        </h1>
+            Dashboard
+
+          </h1>
+
+          <button
+            onClick={logout}
+            className="px-6 py-4 rounded-2xl bg-red-500 font-bold"
+          >
+            Logout
+          </button>
+
+        </div>
 
         <div className="grid lg:grid-cols-2 gap-10">
 
           <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-8">
 
             <h2 className="text-3xl font-bold mb-8">
-              Neuer Post
+
+              Neuer Beitrag
+
             </h2>
 
             <div className="space-y-6">
@@ -195,10 +254,10 @@ export default function AdminPage() {
               />
 
               <textarea
+                rows={8}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Beschreibung / Tutorial"
-                rows={8}
                 className="w-full p-5 rounded-2xl bg-black/30 border border-white/10 outline-none resize-none"
               />
 
@@ -232,7 +291,7 @@ export default function AdminPage() {
                 onClick={createPost}
                 className="w-full py-5 rounded-2xl bg-gradient-to-r from-cyan-400 to-purple-500 text-xl font-bold"
               >
-                Post veröffentlichen
+                Beitrag veröffentlichen
               </button>
 
             </div>
@@ -264,7 +323,7 @@ export default function AdminPage() {
                     {post.title}
                   </h2>
 
-                  <p className="text-gray-400 mb-6">
+                  <p className="text-gray-400 mb-6 whitespace-pre-wrap">
                     {post.description}
                   </p>
 
@@ -288,5 +347,6 @@ export default function AdminPage() {
       </div>
 
     </main>
+
   )
 }
