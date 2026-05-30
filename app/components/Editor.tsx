@@ -72,6 +72,16 @@ export default function Editor({ content, onChange }: EditorProps) {
     editorProps: {
       attributes: {
         class: 'prose prose-invert prose-lg max-w-none min-h-[400px] p-5 outline-none prose-headings:text-white prose-p:text-gray-300 prose-code:text-cyan-400 prose-code:bg-cyan-400/10 prose-code:px-2 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10 prose-strong:text-white prose-em:text-gray-200 prose-ul:text-gray-300 prose-ol:text-gray-300 prose-li:text-gray-300 prose-blockquote:text-gray-300 prose-blockquote:border-cyan-400'
+      },
+      handleKeyDown: (view, event) => {
+        // Ctrl+S or Cmd+S to trigger save (prevent default browser save)
+        if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+          event.preventDefault()
+          // Dispatch custom event that parent can listen to
+          window.dispatchEvent(new CustomEvent('editor-save'))
+          return true
+        }
+        return false
       }
     }
   })

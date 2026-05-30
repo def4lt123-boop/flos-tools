@@ -4,8 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
-import { Search, ChevronDown, Calendar, Share2 } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { Search, ChevronDown, Calendar, ArrowUpDown } from 'lucide-react'
 
 type Post = {
   id: number
@@ -24,6 +23,7 @@ export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'alphabetical'>('newest')
 
   useEffect(() => {
     async function loadPosts() {
@@ -55,8 +55,21 @@ export default function HomePage() {
       )
     }
 
+    // Sort posts
+    switch (sortBy) {
+      case 'newest':
+        filtered = [...filtered].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        break
+      case 'oldest':
+        filtered = [...filtered].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+        break
+      case 'alphabetical':
+        filtered = [...filtered].sort((a, b) => a.title.localeCompare(b.title))
+        break
+    }
+
     return filtered
-  }, [posts, selectedCategory, searchQuery])
+  }, [posts, selectedCategory, searchQuery, sortBy])
 
   const scrollToContent = () => {
     window.scrollTo({
@@ -69,8 +82,13 @@ export default function HomePage() {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     const now = new Date()
-    const diffTime = Math.abs(now.getTime() - date.getTime())
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    
+    // Reset time to midnight for accurate day comparison
+    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+    const nowOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    
+    const diffTime = nowOnly.getTime() - dateOnly.getTime()
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
     
     if (diffDays === 0) return 'Heute'
     if (diffDays === 1) return 'Gestern'
@@ -78,33 +96,6 @@ export default function HomePage() {
     if (diffDays < 30) return `vor ${Math.floor(diffDays / 7)} Wochen`
     if (diffDays < 365) return `vor ${Math.floor(diffDays / 30)} Monaten`
     return `vor ${Math.floor(diffDays / 365)} Jahren`
-  }
-
-  // Share function
-  const sharePost = async (post: Post) => {
-    const shareData = {
-      title: post.title,
-      text: post.description.replace(/<[^>]*>/g, '').substring(0, 100) + '...',
-      url: window.location.href
-    }
-
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData)
-        toast.success('Erfolgreich geteilt!')
-      } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
-          copyToClipboard(window.location.href)
-        }
-      }
-    } else {
-      copyToClipboard(window.location.href)
-    }
-  }
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-    toast.success('Link in Zwischenablage kopiert!')
   }
 
   // Prevent body scroll when modal is open
@@ -313,7 +304,7 @@ export default function HomePage() {
             />
           </motion.div>
 
-          {/* Category Filter */}
+          {/* Category Filter & Sort */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -342,7 +333,40 @@ export default function HomePage() {
                     : 'bg-white/5 border border-white/10 hover:bg-white/10'
                 }`}
               >
-                {cat.label} ({cat.count})
+              {cat.label} ({cat.count})
+              </motion.button>
+            ))}
+          </motion.div>
+
+          {/* Sort Options */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.5 }}
+            className="flex flex-wrap justify-center gap-3"
+          >
+            <div className="flex items-center gap-2 text-gray-400 mr-2">
+              <ArrowUpDown size={18} />
+              <span className="text-sm">Sortieren:</span>
+            </div>
+            {[
+              { key: 'newest', label: 'Neueste zuerst' },
+              { key: 'oldest', label: 'Älteste zuerst' },
+              { key: 'alphabetical', label: 'A-Z' }
+            ].map((sort) => (
+              <motion.button
+                key={sort.key}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setSortBy(sort.key as 'newest' | 'oldest' | 'alphabetical')}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                  sortBy === sort.key
+                    ? 'bg-cyan-400/20 border border-cyan-400/40 text-cyan-400'
+                    : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10'
+                }`}
+              >
+                {sort.label}
               </motion.button>
             ))}
           </motion.div>
@@ -495,29 +519,17 @@ export default function HomePage() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="mb-8 flex flex-wrap items-center justify-between gap-4"
+                    className="mb-8 flex items-center gap-4"
                   >
-                    <div className="flex items-center gap-4">
-                      <span className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-cyan-400/20 to-purple-500/20 border border-cyan-400/40 backdrop-blur-xl text-lg font-semibold">
-                        {selectedPost.category === 'program' && '💻 Programm'}
-                        {selectedPost.category === 'tutorial' && '📚 Tutorial'}
-                        {selectedPost.category === 'apk' && '📱 APK'}
-                      </span>
-                      <span className="flex items-center gap-2 text-gray-400">
-                        <Calendar size={18} />
-                        {formatDate(selectedPost.created_at)}
-                      </span>
-                    </div>
-                    
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => sharePost(selectedPost)}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-gray-300"
-                    >
-                      <Share2 size={18} />
-                      Teilen
-                    </motion.button>
+                    <span className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-cyan-400/20 to-purple-500/20 border border-cyan-400/40 backdrop-blur-xl text-lg font-semibold">
+                      {selectedPost.category === 'program' && '💻 Programm'}
+                      {selectedPost.category === 'tutorial' && '📚 Tutorial'}
+                      {selectedPost.category === 'apk' && '📱 APK'}
+                    </span>
+                    <span className="flex items-center gap-2 text-gray-400">
+                      <Calendar size={18} />
+                      {formatDate(selectedPost.created_at)}
+                    </span>
                   </motion.div>
 
                   <motion.h1

@@ -55,6 +55,16 @@ export default function AdminPage() {
     checkUser()
     fetchPosts()
 
+    // Listen for Ctrl+S from editor
+    const handleEditorSave = () => {
+      savePost()
+    }
+    window.addEventListener('editor-save', handleEditorSave)
+    
+    return () => {
+      window.removeEventListener('editor-save', handleEditorSave)
+    }
+
   }, [])
 
   async function checkUser() {
