@@ -58,7 +58,10 @@ export default function AdminPage() {
     setLoading(false)
   }
 
-  async function login() {
+  async function login(e?: React.FormEvent) {
+    if (e) {
+      e.preventDefault()
+    }
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -269,7 +272,7 @@ export default function AdminPage() {
 
           </h1>
 
-          <div className="space-y-5">
+          <form onSubmit={login} className="space-y-5">
 
             <input
               type="email"
@@ -277,6 +280,7 @@ export default function AdminPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full p-5 rounded-2xl bg-black/30 border border-white/10 outline-none"
+              required
             />
 
             <input
@@ -285,16 +289,17 @@ export default function AdminPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full p-5 rounded-2xl bg-black/30 border border-white/10 outline-none"
+              required
             />
 
             <button
-              onClick={login}
-              className="w-full py-5 rounded-2xl bg-gradient-to-r from-cyan-400 to-purple-500 text-xl font-bold"
+              type="submit"
+              className="w-full py-5 rounded-2xl bg-gradient-to-r from-cyan-400 to-purple-500 text-xl font-bold hover:scale-105 transition-transform cursor-pointer"
             >
               Login
             </button>
 
-          </div>
+          </form>
 
         </motion.div>
 
