@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { Search, ChevronDown } from 'lucide-react'
@@ -64,6 +64,24 @@ export default function HomePage() {
     })
   }
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (selectedPost) {
+      document.body.style.overflow = 'hidden'
+      document.body.style.position = 'fixed'
+      document.body.style.width = '100%'
+    } else {
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.width = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.width = ''
+    }
+  }, [selectedPost])
+
   return (
     <main className="min-h-screen bg-[#050816] text-white overflow-hidden">
 
@@ -71,16 +89,16 @@ export default function HomePage() {
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="fixed top-0 left-0 w-full z-40 border-b border-white/10 bg-black/30 backdrop-blur-xl"
+        className="fixed top-0 left-0 w-full z-40 border-b border-white/10 bg-black/30 backdrop-blur-xl safe-top"
       >
 
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
 
           <motion.h1
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-2xl font-black"
+            className="text-xl sm:text-2xl font-black"
           >
             Flo's Tools
           </motion.h1>
@@ -92,7 +110,7 @@ export default function HomePage() {
           >
             <Link
               href="/admin"
-              className="px-5 py-3 rounded-2xl bg-gradient-to-r from-cyan-400 to-purple-500 font-bold hover:scale-105 transition-transform"
+              className="px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-gradient-to-r from-cyan-400 to-purple-500 text-sm sm:text-base font-bold hover:scale-105 transition-transform active:scale-95"
             >
               Admin Login
             </Link>
@@ -173,7 +191,7 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.8 }}
-            className="text-6xl md:text-8xl font-black leading-none mb-8"
+            className="text-5xl sm:text-6xl md:text-8xl font-black leading-tight sm:leading-none mb-6 sm:mb-8"
           >
             Flo's
             <motion.span
@@ -248,7 +266,7 @@ export default function HomePage() {
               placeholder="Suche nach Programmen, Tutorials, APKs..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-16 pr-6 py-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl outline-none text-white placeholder:text-gray-400 focus:border-cyan-400/50 transition-colors"
+              className="w-full pl-14 sm:pl-16 pr-4 sm:pr-6 py-4 sm:py-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl outline-none text-white placeholder:text-gray-400 focus:border-cyan-400/50 transition-colors text-base"
             />
           </motion.div>
 
@@ -275,7 +293,7 @@ export default function HomePage() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setSelectedCategory(cat.key)}
-                className={`px-8 py-4 rounded-2xl font-bold transition-all ${
+                className={`px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl text-sm sm:text-base font-bold transition-all flex-1 sm:flex-none min-w-[140px] sm:min-w-0 ${
                   selectedCategory === cat.key
                     ? 'bg-gradient-to-r from-cyan-400 to-purple-500'
                     : 'bg-white/5 border border-white/10 hover:bg-white/10'
@@ -392,7 +410,7 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 100 }}
               transition={{ type: "spring", damping: 25 }}
-              className="max-w-6xl mx-auto p-6 py-20"
+              className="max-w-6xl mx-auto p-4 sm:p-6 py-12 sm:py-20 safe-bottom"
               onClick={(e) => e.stopPropagation()}
             >
 
@@ -400,9 +418,9 @@ export default function HomePage() {
                 whileHover={{ scale: 1.05, rotate: 90 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setSelectedPost(null)}
-                className="mb-10 px-6 py-3 rounded-2xl bg-gradient-to-r from-white/10 to-white/5 border border-white/20 hover:border-cyan-400/50 transition-all backdrop-blur-xl font-bold"
+                className="mb-6 sm:mb-10 px-5 sm:px-6 py-3 rounded-xl sm:rounded-2xl bg-gradient-to-r from-white/10 to-white/5 border border-white/20 hover:border-cyan-400/50 transition-all backdrop-blur-xl font-bold flex items-center gap-2"
               >
-                ✕ Schließen
+                <span className="text-xl">✕</span> Schließen
               </motion.button>
 
               <div className="rounded-3xl border border-white/10 bg-gradient-to-b from-white/5 to-transparent backdrop-blur-xl overflow-hidden">
@@ -443,7 +461,7 @@ export default function HomePage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
-                    className="text-5xl md:text-7xl font-black mb-8 bg-gradient-to-r from-white via-white to-gray-400 bg-clip-text text-transparent leading-tight"
+                    className="text-4xl sm:text-5xl md:text-7xl font-black mb-6 sm:mb-8 bg-gradient-to-r from-white via-white to-gray-400 bg-clip-text text-transparent leading-tight"
                   >
                     {selectedPost.title}
                   </motion.h1>
@@ -454,9 +472,9 @@ export default function HomePage() {
                     transition={{ delay: 0.5 }}
                     className="mb-12"
                   >
-                    <div className="rounded-2xl border border-white/10 bg-black/30 backdrop-blur-xl p-8">
+                    <div className="rounded-2xl border border-white/10 bg-black/30 backdrop-blur-xl p-5 sm:p-8">
                       <div 
-                        className="prose prose-invert prose-xl max-w-none
+                        className="prose prose-invert prose-lg sm:prose-xl max-w-none
                           prose-headings:font-black prose-headings:text-white prose-headings:mb-6
                           prose-h1:text-5xl prose-h2:text-4xl prose-h3:text-3xl
                           prose-p:text-gray-300 prose-p:leading-relaxed prose-p:mb-6
@@ -488,7 +506,7 @@ export default function HomePage() {
                         href={selectedPost.file_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-3 px-12 py-6 rounded-2xl bg-gradient-to-r from-cyan-400 to-purple-500 text-2xl font-black shadow-2xl shadow-cyan-400/20"
+                        className="inline-flex items-center justify-center gap-3 w-full sm:w-auto px-8 sm:px-12 py-5 sm:py-6 rounded-2xl bg-gradient-to-r from-cyan-400 to-purple-500 text-xl sm:text-2xl font-black shadow-2xl shadow-cyan-400/20 active:scale-95 transition-transform"
                       >
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
