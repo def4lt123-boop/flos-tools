@@ -115,6 +115,10 @@ img {
   }
 }
 
+.animate-spin-reverse {
+  animation: spin 1s linear infinite reverse;
+}
+
 .fade-mask {
   mask-image: linear-gradient(
     to bottom,

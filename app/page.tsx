@@ -22,6 +22,7 @@ export default function HomePage() {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function loadPosts() {
@@ -33,6 +34,7 @@ export default function HomePage() {
       if (data) {
         setPosts(data as Post[])
       }
+      setLoading(false)
     }
 
     loadPosts()
@@ -286,7 +288,24 @@ export default function HomePage() {
 
         </motion.div>
 
-        {filteredPosts.length === 0 ? (
+        {loading ? (
+          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-8">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="rounded-3xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-xl">
+                <div className="w-full h-64 bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse" />
+                <div className="p-7 space-y-4">
+                  <div className="w-24 h-6 bg-gradient-to-r from-white/5 via-white/10 to-white/5 rounded-full animate-pulse" />
+                  <div className="w-3/4 h-8 bg-gradient-to-r from-white/5 via-white/10 to-white/5 rounded animate-pulse" />
+                  <div className="space-y-2">
+                    <div className="w-full h-4 bg-gradient-to-r from-white/5 via-white/10 to-white/5 rounded animate-pulse" />
+                    <div className="w-5/6 h-4 bg-gradient-to-r from-white/5 via-white/10 to-white/5 rounded animate-pulse" />
+                    <div className="w-4/6 h-4 bg-gradient-to-r from-white/5 via-white/10 to-white/5 rounded animate-pulse" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredPosts.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -320,6 +339,7 @@ export default function HomePage() {
                       src={post.image_url}
                       alt={post.title}
                       className="w-full h-64 object-cover"
+                      loading="lazy"
                     />
                   </motion.div>
                 )}
@@ -342,9 +362,10 @@ export default function HomePage() {
                     {post.title}
                   </h2>
 
-                  <p className="text-gray-400 line-clamp-3">
-                    {post.description}
-                  </p>
+                  <div 
+                    className="text-gray-400 line-clamp-3 prose prose-invert prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{ __html: post.description }}
+                  />
                 </div>
 
               </motion.div>
@@ -419,14 +440,13 @@ export default function HomePage() {
                 {selectedPost.title}
               </motion.h1>
 
-              <motion.p
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                className="text-xl text-gray-300 leading-relaxed whitespace-pre-wrap mb-10"
-              >
-                {selectedPost.description}
-              </motion.p>
+                className="text-xl text-gray-300 leading-relaxed mb-10 prose prose-invert prose-lg max-w-none"
+                dangerouslySetInnerHTML={{ __html: selectedPost.description }}
+              />
 
               {selectedPost.file_url && (
                 <motion.a

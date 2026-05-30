@@ -1,10 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { supabase } from '../../lib/supabase'
 import toast, { Toaster } from 'react-hot-toast'
-import { Edit2, Trash2, X } from 'lucide-react'
+import { Edit2, Trash2, X, Upload, FileImage, FileArchive, Loader2 } from 'lucide-react'
+import Editor from '../components/Editor'
 
 type Post = {
   id: number
@@ -22,6 +24,10 @@ type User = {
 }
 
 export default function AdminPage() {
+
+  const router = useRouter()
+  const imageInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [loading, setLoading] = useState(true)
 
@@ -85,7 +91,7 @@ export default function AdminPage() {
 
     await supabase.auth.signOut()
 
-    location.reload()
+    router.push('/')
   }
 
   async function fetchPosts() {
@@ -102,6 +108,62 @@ export default function AdminPage() {
     }
   }
 
+  // Funktion zur Bildkomprimierung
+  const compressImage = async (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = (event) => {
+        const img = new Image()
+        img.src = event.target?.result as string
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          const ctx = canvas.getContext('2d')
+          
+          // Max width/height
+          const MAX_WIDTH = 1920
+          const MAX_HEIGHT = 1080
+          let width = img.width
+          let height = img.height
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width
+              width = MAX_WIDTH
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height
+              height = MAX_HEIGHT
+            }
+          }
+
+          canvas.width = width
+          canvas.height = height
+          ctx?.drawImage(img, 0, 0, width, height)
+
+          // Konvertiere zu WebP mit 80% Qualität
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".webp", {
+                  type: 'image/webp',
+                  lastModified: Date.now(),
+                })
+                resolve(compressedFile)
+              } else {
+                reject(new Error('Canvas to Blob failed'))
+              }
+            },
+            'image/webp',
+            0.8
+          )
+        }
+      }
+      reader.onerror = (error) => reject(error)
+    })
+  }
+
   async function savePost() {
 
     try {
@@ -115,12 +177,15 @@ export default function AdminPage() {
       let fileUrl = ''
 
       if (image) {
-
-        const imageName = `${Date.now()}-${image.name}`
+        toast.loading('Komprimiere Bild...', { id: 'upload' })
+        const compressedImage = await compressImage(image)
+        
+        toast.loading('Lade Bild hoch...', { id: 'upload' })
+        const imageName = `${Date.now()}-${compressedImage.name}`
 
         const imageUpload = await supabase.storage
           .from('images')
-          .upload(imageName, image)
+          .upload(imageName, compressedImage)
 
         if (imageUpload.error) {
           toast.error(imageUpload.error.message)
@@ -189,11 +254,11 @@ export default function AdminPage() {
           ])
 
         if (insert.error) {
-          toast.error(insert.error.message)
+          toast.error(insert.error.message, { id: 'upload' })
           return
         }
 
-        toast.success('Post erstellt')
+        toast.success('Post erstellt', { id: 'upload' })
       }
 
       setTitle('')
@@ -206,7 +271,7 @@ export default function AdminPage() {
 
     } catch (err) {
       console.log(err)
-      toast.error('Fehler beim Upload')
+      toast.error('Fehler beim Upload', { id: 'upload' })
     }
   }
 
@@ -246,10 +311,23 @@ export default function AdminPage() {
   }
 
   if (loading) {
-
     return (
       <main className="min-h-screen bg-[#050816] text-white flex items-center justify-center">
-        Loading...
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full border-4 border-white/10 border-t-cyan-400 animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full border-4 border-white/10 border-b-purple-500 animate-spin-reverse" />
+            </div>
+          </div>
+          <p className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent animate-pulse">
+            Lade Dashboard...
+          </p>
+        </motion.div>
       </main>
     )
   }
@@ -360,13 +438,13 @@ export default function AdminPage() {
                 className="w-full p-5 rounded-2xl bg-black/30 border border-white/10 outline-none"
               />
 
-              <textarea
-                rows={8}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Beschreibung / Tutorial"
-                className="w-full p-5 rounded-2xl bg-black/30 border border-white/10 outline-none resize-none"
-              />
+              <div className="space-y-2">
+                <p className="text-gray-400">Inhalt / Tutorial</p>
+                <Editor 
+                  content={description} 
+                  onChange={setDescription} 
+                />
+              </div>
 
               <div>
                 <p className="mb-3 text-gray-400">
@@ -407,30 +485,76 @@ export default function AdminPage() {
               </div>
 
               <div>
-
-                <p className="mb-3 text-gray-400">
-                  Bild hochladen
-                </p>
-
+                <p className="mb-3 text-gray-400">Bild hochladen</p>
                 <input
+                  ref={imageInputRef}
                   type="file"
                   accept="image/*"
                   onChange={(e) => setImage(e.target.files?.[0] || null)}
+                  className="hidden"
                 />
-
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => imageInputRef.current?.click()}
+                  className={`w-full p-5 rounded-2xl border-2 border-dashed transition-all flex items-center gap-4 ${
+                    image
+                      ? 'border-cyan-400/60 bg-cyan-400/10'
+                      : 'border-white/20 bg-white/5 hover:border-cyan-400/40 hover:bg-white/10'
+                  }`}
+                >
+                  <div className={`p-3 rounded-xl ${image ? 'bg-cyan-400/20' : 'bg-white/10'}`}>
+                    <FileImage size={22} className={image ? 'text-cyan-400' : 'text-gray-400'} />
+                  </div>
+                  <div className="text-left">
+                    <p className={`font-semibold ${image ? 'text-cyan-400' : 'text-gray-300'}`}>
+                      {image ? image.name : 'Bild auswählen'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {image ? `${(image.size / 1024 / 1024).toFixed(2)} MB` : 'PNG, JPG, WEBP'}
+                    </p>
+                  </div>
+                  <div className="ml-auto">
+                    <Upload size={18} className="text-gray-400" />
+                  </div>
+                </motion.button>
               </div>
 
               <div>
-
-                <p className="mb-3 text-gray-400">
-                  Datei / Programm / APK / ZIP
-                </p>
-
+                <p className="mb-3 text-gray-400">Datei / Programm / APK / ZIP</p>
                 <input
+                  ref={fileInputRef}
                   type="file"
                   onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  className="hidden"
                 />
-
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`w-full p-5 rounded-2xl border-2 border-dashed transition-all flex items-center gap-4 ${
+                    file
+                      ? 'border-purple-400/60 bg-purple-400/10'
+                      : 'border-white/20 bg-white/5 hover:border-purple-400/40 hover:bg-white/10'
+                  }`}
+                >
+                  <div className={`p-3 rounded-xl ${file ? 'bg-purple-400/20' : 'bg-white/10'}`}>
+                    <FileArchive size={22} className={file ? 'text-purple-400' : 'text-gray-400'} />
+                  </div>
+                  <div className="text-left">
+                    <p className={`font-semibold ${file ? 'text-purple-400' : 'text-gray-300'}`}>
+                      {file ? file.name : 'Datei auswählen'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : 'EXE, APK, ZIP, PDF, ...'}
+                    </p>
+                  </div>
+                  <div className="ml-auto">
+                    <Upload size={18} className="text-gray-400" />
+                  </div>
+                </motion.button>
               </div>
 
               <button
@@ -468,9 +592,10 @@ export default function AdminPage() {
                     {post.title}
                   </h2>
 
-                  <p className="text-gray-400 mb-4 whitespace-pre-wrap line-clamp-3">
-                    {post.description}
-                  </p>
+                  <div 
+                    className="text-gray-400 mb-4 line-clamp-3 prose prose-invert prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{ __html: post.description }}
+                  />
 
                   <div className="mb-6">
                     <span className="inline-block px-4 py-2 rounded-full bg-gradient-to-r from-cyan-400/20 to-purple-500/20 border border-cyan-400/30 text-sm">
