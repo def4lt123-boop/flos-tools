@@ -223,16 +223,34 @@ export default function AdminPage() {
       }
 
       if (editingPost) {
-        // Update existing post
+        // Update existing post - only update fields that have values
+        const updateData: {
+          title: string
+          description: string
+          category: string
+          image_url?: string
+          file_url?: string
+        } = {
+          title,
+          description,
+          category
+        }
+
+        // Only update image_url if we have a new image or if there was an existing one
+        if (imageUrl) {
+          updateData.image_url = imageUrl
+        }
+
+        // Only update file_url if we have a new file or if there was an existing one
+        if (fileUrl) {
+          updateData.file_url = fileUrl
+        }
+
+        console.log('Updating post with data:', updateData)
+
         const update = await supabase
           .from('posts')
-          .update({
-            title,
-            description,
-            category,
-            image_url: imageUrl,
-            file_url: fileUrl
-          })
+          .update(updateData)
           .eq('id', editingPost.id)
 
         if (update.error) {
@@ -241,7 +259,7 @@ export default function AdminPage() {
           return
         }
 
-        console.log('Post updated successfully:', { title, description, category, imageUrl, fileUrl })
+        console.log('Post updated successfully')
         toast.success('Post aktualisiert', { id: 'upload' })
         setEditingPost(null)
         setTitle('')
