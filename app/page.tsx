@@ -24,6 +24,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'alphabetical'>('newest')
+  const [scrollPosition, setScrollPosition] = useState(0)
 
   useEffect(() => {
     async function loadPosts() {
@@ -98,23 +99,36 @@ export default function HomePage() {
     return `vor ${Math.floor(diffDays / 365)} Jahren`
   }
 
-  // Prevent body scroll when modal is open
+  // Prevent body scroll when modal is open and preserve scroll position
   useEffect(() => {
     if (selectedPost) {
+      // Save current scroll position
+      const currentScroll = window.scrollY
+      setScrollPosition(currentScroll)
+      
+      // Lock scroll
       document.body.style.overflow = 'hidden'
       document.body.style.position = 'fixed'
+      document.body.style.top = `-${currentScroll}px`
       document.body.style.width = '100%'
     } else {
+      // Restore scroll
       document.body.style.overflow = ''
       document.body.style.position = ''
+      document.body.style.top = ''
       document.body.style.width = ''
+      
+      // Restore scroll position
+      window.scrollTo(0, scrollPosition)
     }
+    
     return () => {
       document.body.style.overflow = ''
       document.body.style.position = ''
+      document.body.style.top = ''
       document.body.style.width = ''
     }
-  }, [selectedPost])
+  }, [selectedPost, scrollPosition])
 
   return (
     <main className="min-h-screen bg-[#050816] text-white overflow-hidden">
