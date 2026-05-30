@@ -237,11 +237,19 @@ export default function AdminPage() {
 
         if (update.error) {
           toast.error(update.error.message, { id: 'upload' })
+          console.error('Update error:', update.error)
           return
         }
 
+        console.log('Post updated successfully:', { title, description, category, imageUrl, fileUrl })
         toast.success('Post aktualisiert', { id: 'upload' })
         setEditingPost(null)
+        setTitle('')
+        setDescription('')
+        setCategory('program')
+        setImage(null)
+        setFile(null)
+        fetchPosts()
       } else {
         // Create new post
         const insert = await supabase
@@ -262,15 +270,13 @@ export default function AdminPage() {
         }
 
         toast.success('Post erstellt', { id: 'upload' })
+        setTitle('')
+        setDescription('')
+        setCategory('program')
+        setImage(null)
+        setFile(null)
+        fetchPosts()
       }
-
-      setTitle('')
-      setDescription('')
-      setCategory('program')
-      setImage(null)
-      setFile(null)
-
-      fetchPosts()
 
     } catch (err) {
       console.log(err)
