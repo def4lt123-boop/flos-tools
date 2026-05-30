@@ -223,35 +223,29 @@ export default function AdminPage() {
       }
 
       if (editingPost) {
-        // Update existing post - only update fields that have values
-        const updateData: {
-          title: string
-          description: string
-          category: string
-          image_url?: string
-          file_url?: string
-        } = {
-          title,
-          description,
-          category
-        }
-
-        // Only update image_url if we have a new image or if there was an existing one
-        if (imageUrl) {
-          updateData.image_url = imageUrl
-        }
-
-        // Only update file_url if we have a new file or if there was an existing one
-        if (fileUrl) {
-          updateData.file_url = fileUrl
-        }
-
-        console.log('Updating post with data:', updateData)
+        // Update existing post
+        console.log('=== UPDATE DEBUG ===')
+        console.log('Editing post ID:', editingPost.id)
+        console.log('Current title:', title)
+        console.log('Current description length:', description.length)
+        console.log('Current category:', category)
+        console.log('Image URL:', imageUrl)
+        console.log('File URL:', fileUrl)
+        console.log('Original post:', editingPost)
 
         const update = await supabase
           .from('posts')
-          .update(updateData)
+          .update({
+            title: title,
+            description: description,
+            category: category,
+            image_url: imageUrl || editingPost.image_url,
+            file_url: fileUrl || editingPost.file_url
+          })
           .eq('id', editingPost.id)
+          .select()
+
+        console.log('Update result:', update)
 
         if (update.error) {
           toast.error(update.error.message, { id: 'upload' })
@@ -259,7 +253,7 @@ export default function AdminPage() {
           return
         }
 
-        console.log('Post updated successfully')
+        console.log('Post updated successfully. New data:', update.data)
         toast.success('Post aktualisiert', { id: 'upload' })
         setEditingPost(null)
         setTitle('')
