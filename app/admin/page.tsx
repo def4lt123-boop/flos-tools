@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { supabase } from '../../lib/supabase'
 import toast, { Toaster } from 'react-hot-toast'
-import { Edit2, Trash2, X, Upload, FileImage, FileArchive, Calendar } from 'lucide-react'
+import { Edit2, Trash2, X, Upload, FileImage, FileArchive, Calendar, Eye, EyeOff } from 'lucide-react'
 import Editor from '../components/Editor'
 import DeleteModal from '../components/DeleteModal'
 import ImagePreview from '../components/ImagePreview'
@@ -37,6 +37,7 @@ export default function AdminPage() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -49,6 +50,7 @@ export default function AdminPage() {
   const [editingPost, setEditingPost] = useState<Post | null>(null)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [postToDelete, setPostToDelete] = useState<Post | null>(null)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
 
   useEffect(() => {
 
@@ -61,11 +63,30 @@ export default function AdminPage() {
     }
     window.addEventListener('editor-save', handleEditorSave)
     
+    // Warn before leaving with unsaved changes
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    
     return () => {
       window.removeEventListener('editor-save', handleEditorSave)
+      window.removeEventListener('beforeunload', handleBeforeUnload)
     }
 
-  }, [])
+  }, [hasUnsavedChanges])
+
+  // Track changes
+  useEffect(() => {
+    if (title || description || image || file) {
+      setHasUnsavedChanges(true)
+    } else {
+      setHasUnsavedChanges(false)
+    }
+  }, [title, description, image, file])
 
   async function checkUser() {
 
@@ -400,14 +421,23 @@ export default function AdminPage() {
               required
             />
 
-            <input
-              type="password"
-              placeholder="Passwort"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-5 rounded-2xl bg-black/30 border border-white/10 outline-none"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Passwort"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full p-5 pr-14 rounded-2xl bg-black/30 border border-white/10 outline-none"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-white transition-colors"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
 
             <button
               type="submit"
