@@ -41,7 +41,7 @@ export default function AdminPage() {
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [category, setCategory] = useState<'program' | 'tutorial' | 'apk'>('program')
+  const [categories, setCategories] = useState<string[]>(['program'])
 
   const [image, setImage] = useState<File | null>(null)
   const [files, setFiles] = useState<File[]>([])
@@ -267,7 +267,7 @@ export default function AdminPage() {
         console.log('Editing post ID:', editingPost.id)
         console.log('Current title:', title)
         console.log('Current description length:', description.length)
-        console.log('Current category:', category)
+        console.log('Current categories:', categories)
         console.log('Image URL:', imageUrl)
         console.log('File URL:', fileUrl)
         console.log('Original post:', editingPost)
@@ -277,7 +277,7 @@ export default function AdminPage() {
           .update({
             title: title,
             description: description,
-            category: category,
+            category: categories.join(','),
             image_url: imageUrl || editingPost.image_url,
             file_url: fileUrl || editingPost.file_url
           })
@@ -297,7 +297,7 @@ export default function AdminPage() {
         setEditingPost(null)
         setTitle('')
         setDescription('')
-        setCategory('program')
+        setCategories(['program'])
         setImage(null)
         setFiles([])
         fetchPosts()
@@ -309,7 +309,7 @@ export default function AdminPage() {
             {
               title,
               description,
-              category,
+              category: categories.join(','),
               image_url: imageUrl,
               file_url: fileUrl
             }
@@ -323,7 +323,7 @@ export default function AdminPage() {
         toast.success('Post erstellt', { id: 'upload' })
         setTitle('')
         setDescription('')
-        setCategory('program')
+        setCategories(['program'])
         setImage(null)
         setFiles([])
         fetchPosts()
@@ -339,7 +339,7 @@ export default function AdminPage() {
     setEditingPost(post)
     setTitle(post.title)
     setDescription(post.description)
-    setCategory(post.category || 'program')
+    setCategories(post.category ? post.category.split(',') : ['program'])
     setImage(null)
     setFiles([])
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -349,7 +349,7 @@ export default function AdminPage() {
     setEditingPost(null)
     setTitle('')
     setDescription('')
-    setCategory('program')
+    setCategories(['program'])
     setImage(null)
     setFiles([])
   }
@@ -531,13 +531,19 @@ export default function AdminPage() {
 
               <div>
                 <p className="mb-3 text-gray-400">
-                  Kategorie
+                  Kategorien (Mehrfachauswahl möglich)
                 </p>
                 <div className="grid grid-cols-3 gap-3">
                   <button
-                    onClick={() => setCategory('program')}
+                    onClick={() => {
+                      if (categories.includes('program')) {
+                        setCategories(categories.filter(c => c !== 'program'))
+                      } else {
+                        setCategories([...categories, 'program'])
+                      }
+                    }}
                     className={`p-4 rounded-2xl border transition-all ${
-                      category === 'program'
+                      categories.includes('program')
                         ? 'bg-gradient-to-r from-cyan-400 to-purple-500 border-transparent'
                         : 'bg-black/30 border-white/10'
                     }`}
@@ -545,9 +551,15 @@ export default function AdminPage() {
                     Programm
                   </button>
                   <button
-                    onClick={() => setCategory('tutorial')}
+                    onClick={() => {
+                      if (categories.includes('tutorial')) {
+                        setCategories(categories.filter(c => c !== 'tutorial'))
+                      } else {
+                        setCategories([...categories, 'tutorial'])
+                      }
+                    }}
                     className={`p-4 rounded-2xl border transition-all ${
-                      category === 'tutorial'
+                      categories.includes('tutorial')
                         ? 'bg-gradient-to-r from-cyan-400 to-purple-500 border-transparent'
                         : 'bg-black/30 border-white/10'
                     }`}
@@ -555,9 +567,15 @@ export default function AdminPage() {
                     Tutorial
                   </button>
                   <button
-                    onClick={() => setCategory('apk')}
+                    onClick={() => {
+                      if (categories.includes('apk')) {
+                        setCategories(categories.filter(c => c !== 'apk'))
+                      } else {
+                        setCategories([...categories, 'apk'])
+                      }
+                    }}
                     className={`p-4 rounded-2xl border transition-all ${
-                      category === 'apk'
+                      categories.includes('apk')
                         ? 'bg-gradient-to-r from-cyan-400 to-purple-500 border-transparent'
                         : 'bg-black/30 border-white/10'
                     }`}
@@ -604,7 +622,7 @@ export default function AdminPage() {
                     </div>
                     <div className="text-center">
                       <p className="font-semibold text-gray-300 text-lg">Bild hier ablegen oder klicken</p>
-                      <p className="text-sm text-gray-500 mt-1">PNG, JPG, WEBP (max. 10MB)</p>
+                      <p className="text-sm text-gray-500 mt-1">PNG, JPG, WEBP (max. 100MB)</p>
                     </div>
                   </motion.div>
                 ) : (
@@ -723,12 +741,22 @@ export default function AdminPage() {
                     dangerouslySetInnerHTML={{ __html: post.description }}
                   />
 
-                  <div className="mb-6">
-                    <span className="inline-block px-4 py-2 rounded-full bg-gradient-to-r from-cyan-400/20 to-purple-500/20 border border-cyan-400/30 text-sm">
-                      {post.category === 'program' && '💻 Programm'}
-                      {post.category === 'tutorial' && '📚 Tutorial'}
-                      {post.category === 'apk' && '📱 APK'}
-                    </span>
+                  <div className="mb-6 flex flex-wrap gap-2">
+                    {post.category?.includes('program') && (
+                      <span className="inline-block px-4 py-2 rounded-full bg-gradient-to-r from-cyan-400/20 to-purple-500/20 border border-cyan-400/30 text-sm">
+                        💻 Programm
+                      </span>
+                    )}
+                    {post.category?.includes('tutorial') && (
+                      <span className="inline-block px-4 py-2 rounded-full bg-gradient-to-r from-cyan-400/20 to-purple-500/20 border border-cyan-400/30 text-sm">
+                        📚 Tutorial
+                      </span>
+                    )}
+                    {post.category?.includes('apk') && (
+                      <span className="inline-block px-4 py-2 rounded-full bg-gradient-to-r from-cyan-400/20 to-purple-500/20 border border-cyan-400/30 text-sm">
+                        📱 APK
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex gap-3">

@@ -46,7 +46,7 @@ export default function HomePage() {
     let filtered = posts
 
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter(post => post.category === selectedCategory)
+      filtered = filtered.filter(post => post.category?.includes(selectedCategory))
     }
 
     if (searchQuery) {
@@ -327,9 +327,9 @@ export default function HomePage() {
           >
             {[
               { key: 'all', label: 'Alle', count: posts.length },
-              { key: 'program', label: '💻 Programme', count: posts.filter(p => p.category === 'program').length },
-              { key: 'tutorial', label: '📚 Tutorials', count: posts.filter(p => p.category === 'tutorial').length },
-              { key: 'apk', label: '📱 APKs', count: posts.filter(p => p.category === 'apk').length }
+              { key: 'program', label: '💻 Programme', count: posts.filter(p => p.category?.includes('program')).length },
+              { key: 'tutorial', label: '📚 Tutorials', count: posts.filter(p => p.category?.includes('tutorial')).length },
+              { key: 'apk', label: '📱 APKs', count: posts.filter(p => p.category?.includes('apk')).length }
             ].map((cat, index) => (
               <motion.button
                 key={cat.key}
@@ -449,12 +449,24 @@ export default function HomePage() {
                     viewport={{ once: true }}
                     className="mb-4 flex items-center justify-between"
                   >
-                    <span className="inline-block px-4 py-2 rounded-full bg-gradient-to-r from-cyan-400/20 to-purple-500/20 border border-cyan-400/30 text-sm">
-                      {post.category === 'program' && '💻 Programm'}
-                      {post.category === 'tutorial' && '📚 Tutorial'}
-                      {post.category === 'apk' && '📱 APK'}
-                    </span>
-                    <span className="flex items-center gap-1.5 text-sm text-gray-400">
+                    <div className="flex flex-wrap gap-2">
+                      {post.category?.includes('program') && (
+                        <span className="inline-block px-3 py-1.5 rounded-full bg-gradient-to-r from-cyan-400/20 to-purple-500/20 border border-cyan-400/30 text-xs">
+                          💻 Programm
+                        </span>
+                      )}
+                      {post.category?.includes('tutorial') && (
+                        <span className="inline-block px-3 py-1.5 rounded-full bg-gradient-to-r from-cyan-400/20 to-purple-500/20 border border-cyan-400/30 text-xs">
+                          📚 Tutorial
+                        </span>
+                      )}
+                      {post.category?.includes('apk') && (
+                        <span className="inline-block px-3 py-1.5 rounded-full bg-gradient-to-r from-cyan-400/20 to-purple-500/20 border border-cyan-400/30 text-xs">
+                          📱 APK
+                        </span>
+                      )}
+                    </div>
+                    <span className="flex items-center gap-1.5 text-sm text-gray-400 whitespace-nowrap ml-2">
                       <Calendar size={14} />
                       {formatDate(post.created_at)}
                     </span>
@@ -532,14 +544,26 @@ export default function HomePage() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="mb-8 flex items-center gap-4"
+                    className="mb-8 flex flex-wrap items-center gap-4"
                   >
-                    <span className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-cyan-400/20 to-purple-500/20 border border-cyan-400/40 backdrop-blur-xl text-lg font-semibold">
-                      {selectedPost.category === 'program' && '💻 Programm'}
-                      {selectedPost.category === 'tutorial' && '📚 Tutorial'}
-                      {selectedPost.category === 'apk' && '📱 APK'}
-                    </span>
-                    <span className="flex items-center gap-2 text-gray-400">
+                    <div className="flex flex-wrap gap-3">
+                      {selectedPost.category?.includes('program') && (
+                        <span className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-cyan-400/20 to-purple-500/20 border border-cyan-400/40 backdrop-blur-xl text-lg font-semibold">
+                          💻 Programm
+                        </span>
+                      )}
+                      {selectedPost.category?.includes('tutorial') && (
+                        <span className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-cyan-400/20 to-purple-500/20 border border-cyan-400/40 backdrop-blur-xl text-lg font-semibold">
+                          📚 Tutorial
+                        </span>
+                      )}
+                      {selectedPost.category?.includes('apk') && (
+                        <span className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-cyan-400/20 to-purple-500/20 border border-cyan-400/40 backdrop-blur-xl text-lg font-semibold">
+                          📱 APK
+                        </span>
+                      )}
+                    </div>
+                    <span className="flex items-center gap-2 text-gray-400 ml-auto">
                       <Calendar size={18} />
                       {formatDate(selectedPost.created_at)}
                     </span>
