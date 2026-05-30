@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
-import { Search, ChevronDown } from 'lucide-react'
+import { Search, ChevronDown, Calendar, Share2 } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 type Post = {
   id: number
@@ -62,6 +63,48 @@ export default function HomePage() {
       top: window.innerHeight,
       behavior: 'smooth'
     })
+  }
+
+  // Format date helper
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffTime = Math.abs(now.getTime() - date.getTime())
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    
+    if (diffDays === 0) return 'Heute'
+    if (diffDays === 1) return 'Gestern'
+    if (diffDays < 7) return `vor ${diffDays} Tagen`
+    if (diffDays < 30) return `vor ${Math.floor(diffDays / 7)} Wochen`
+    if (diffDays < 365) return `vor ${Math.floor(diffDays / 30)} Monaten`
+    return `vor ${Math.floor(diffDays / 365)} Jahren`
+  }
+
+  // Share function
+  const sharePost = async (post: Post) => {
+    const shareData = {
+      title: post.title,
+      text: post.description.replace(/<[^>]*>/g, '').substring(0, 100) + '...',
+      url: window.location.href
+    }
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData)
+        toast.success('Erfolgreich geteilt!')
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          copyToClipboard(window.location.href)
+        }
+      }
+    } else {
+      copyToClipboard(window.location.href)
+    }
+  }
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    toast.success('Link in Zwischenablage kopiert!')
   }
 
   // Prevent body scroll when modal is open
@@ -367,12 +410,16 @@ export default function HomePage() {
                     initial={{ opacity: 0, x: -20 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
-                    className="mb-4"
+                    className="mb-4 flex items-center justify-between"
                   >
                     <span className="inline-block px-4 py-2 rounded-full bg-gradient-to-r from-cyan-400/20 to-purple-500/20 border border-cyan-400/30 text-sm">
                       {post.category === 'program' && '💻 Programm'}
                       {post.category === 'tutorial' && '📚 Tutorial'}
                       {post.category === 'apk' && '📱 APK'}
+                    </span>
+                    <span className="flex items-center gap-1.5 text-sm text-gray-400">
+                      <Calendar size={14} />
+                      {formatDate(post.created_at)}
                     </span>
                   </motion.div>
 
@@ -448,13 +495,29 @@ export default function HomePage() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="mb-8"
+                    className="mb-8 flex flex-wrap items-center justify-between gap-4"
                   >
-                    <span className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-cyan-400/20 to-purple-500/20 border border-cyan-400/40 backdrop-blur-xl text-lg font-semibold">
-                      {selectedPost.category === 'program' && '💻 Programm'}
-                      {selectedPost.category === 'tutorial' && '📚 Tutorial'}
-                      {selectedPost.category === 'apk' && '📱 APK'}
-                    </span>
+                    <div className="flex items-center gap-4">
+                      <span className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-cyan-400/20 to-purple-500/20 border border-cyan-400/40 backdrop-blur-xl text-lg font-semibold">
+                        {selectedPost.category === 'program' && '💻 Programm'}
+                        {selectedPost.category === 'tutorial' && '📚 Tutorial'}
+                        {selectedPost.category === 'apk' && '📱 APK'}
+                      </span>
+                      <span className="flex items-center gap-2 text-gray-400">
+                        <Calendar size={18} />
+                        {formatDate(selectedPost.created_at)}
+                      </span>
+                    </div>
+                    
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => sharePost(selectedPost)}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-gray-300"
+                    >
+                      <Share2 size={18} />
+                      Teilen
+                    </motion.button>
                   </motion.div>
 
                   <motion.h1

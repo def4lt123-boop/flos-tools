@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { supabase } from '../../lib/supabase'
 import toast, { Toaster } from 'react-hot-toast'
-import { Edit2, Trash2, X, Upload, FileImage, FileArchive } from 'lucide-react'
+import { Edit2, Trash2, X, Upload, FileImage, FileArchive, Calendar } from 'lucide-react'
 import Editor from '../components/Editor'
 import DeleteModal from '../components/DeleteModal'
+import ImagePreview from '../components/ImagePreview'
 
 type Post = {
   id: number
@@ -528,32 +529,40 @@ export default function AdminPage() {
                   onChange={(e) => setImage(e.target.files?.[0] || null)}
                   className="hidden"
                 />
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => imageInputRef.current?.click()}
-                  className={`w-full p-5 rounded-2xl border-2 border-dashed transition-all flex items-center gap-4 ${
-                    image
-                      ? 'border-cyan-400/60 bg-cyan-400/10'
-                      : 'border-white/20 bg-white/5 hover:border-cyan-400/40 hover:bg-white/10'
-                  }`}
-                >
-                  <div className={`p-3 rounded-xl ${image ? 'bg-cyan-400/20' : 'bg-white/10'}`}>
-                    <FileImage size={22} className={image ? 'text-cyan-400' : 'text-gray-400'} />
-                  </div>
-                  <div className="text-left">
-                    <p className={`font-semibold ${image ? 'text-cyan-400' : 'text-gray-300'}`}>
-                      {image ? image.name : 'Bild auswählen'}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {image ? `${(image.size / 1024 / 1024).toFixed(2)} MB` : 'PNG, JPG, WEBP'}
-                    </p>
-                  </div>
-                  <div className="ml-auto">
-                    <Upload size={18} className="text-gray-400" />
-                  </div>
-                </motion.button>
+                {!image ? (
+                  <motion.div
+                    onDragOver={(e) => {
+                      e.preventDefault()
+                      e.currentTarget.classList.add('border-cyan-400', 'bg-cyan-400/10')
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault()
+                      e.currentTarget.classList.remove('border-cyan-400', 'bg-cyan-400/10')
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      e.currentTarget.classList.remove('border-cyan-400', 'bg-cyan-400/10')
+                      const droppedFile = e.dataTransfer.files[0]
+                      if (droppedFile && droppedFile.type.startsWith('image/')) {
+                        setImage(droppedFile)
+                      } else {
+                        toast.error('Bitte nur Bilddateien hochladen')
+                      }
+                    }}
+                    onClick={() => imageInputRef.current?.click()}
+                    className="w-full p-8 rounded-2xl border-2 border-dashed border-white/20 bg-white/5 hover:border-cyan-400/40 hover:bg-white/10 transition-all flex flex-col items-center justify-center gap-4 cursor-pointer"
+                  >
+                    <div className="p-4 rounded-full bg-white/10">
+                      <Upload size={32} className="text-gray-400" />
+                    </div>
+                    <div className="text-center">
+                      <p className="font-semibold text-gray-300 text-lg">Bild hier ablegen oder klicken</p>
+                      <p className="text-sm text-gray-500 mt-1">PNG, JPG, WEBP (max. 10MB)</p>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <ImagePreview file={image} onRemove={() => setImage(null)} />
+                )}
               </div>
 
               <div>
