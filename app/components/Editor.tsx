@@ -1,15 +1,29 @@
 'use client'
 
 import { useEditor, EditorContent } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
+import Document from '@tiptap/extension-document'
+import Paragraph from '@tiptap/extension-paragraph'
+import Text from '@tiptap/extension-text'
+import Bold from '@tiptap/extension-bold'
+import Italic from '@tiptap/extension-italic'
+import Strike from '@tiptap/extension-strike'
+import Code from '@tiptap/extension-code'
+import Heading from '@tiptap/extension-heading'
+import BulletList from '@tiptap/extension-bullet-list'
+import OrderedList from '@tiptap/extension-ordered-list'
+import ListItem from '@tiptap/extension-list-item'
+import Blockquote from '@tiptap/extension-blockquote'
+import CodeBlock from '@tiptap/extension-code-block'
+import HardBreak from '@tiptap/extension-hard-break'
+import History from '@tiptap/extension-history'
 import Placeholder from '@tiptap/extension-placeholder'
 import { motion } from 'framer-motion'
 import { useEffect } from 'react'
 import {
-  Bold,
-  Italic,
+  Bold as BoldIcon,
+  Italic as ItalicIcon,
   Strikethrough,
-  Code,
+  Code as CodeIcon,
   List,
   ListOrdered,
   Quote,
@@ -30,7 +44,23 @@ export default function Editor({ content, onChange }: EditorProps) {
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      Document,
+      Paragraph,
+      Text,
+      Bold,
+      Italic,
+      Strike,
+      Code,
+      Heading.configure({
+        levels: [1, 2, 3]
+      }),
+      BulletList,
+      OrderedList,
+      ListItem,
+      Blockquote,
+      CodeBlock,
+      HardBreak,
+      History,
       Placeholder.configure({
         placeholder: 'Schreibe hier deinen Beitrag... Unterstützt Fett, Kursiv, Code, Listen und mehr!'
       })
@@ -59,16 +89,16 @@ export default function Editor({ content, onChange }: EditorProps) {
 
   const buttons = [
     {
-      icon: Bold,
+      icon: BoldIcon,
       action: () => editor.chain().focus().toggleBold().run(),
       isActive: editor.isActive('bold'),
-      title: 'Fett'
+      title: 'Fett (Ctrl+B)'
     },
     {
-      icon: Italic,
+      icon: ItalicIcon,
       action: () => editor.chain().focus().toggleItalic().run(),
       isActive: editor.isActive('italic'),
-      title: 'Kursiv'
+      title: 'Kursiv (Ctrl+I)'
     },
     {
       icon: Strikethrough,
@@ -77,10 +107,10 @@ export default function Editor({ content, onChange }: EditorProps) {
       title: 'Durchgestrichen'
     },
     {
-      icon: Code,
+      icon: CodeIcon,
       action: () => editor.chain().focus().toggleCode().run(),
       isActive: editor.isActive('code'),
-      title: 'Code'
+      title: 'Inline Code'
     },
     {
       type: 'separator' as const
@@ -110,7 +140,7 @@ export default function Editor({ content, onChange }: EditorProps) {
       icon: List,
       action: () => editor.chain().focus().toggleBulletList().run(),
       isActive: editor.isActive('bulletList'),
-      title: 'Liste'
+      title: 'Aufzählung'
     },
     {
       icon: ListOrdered,
@@ -137,13 +167,15 @@ export default function Editor({ content, onChange }: EditorProps) {
       icon: Undo,
       action: () => editor.chain().focus().undo().run(),
       isActive: false,
-      title: 'Rückgängig'
+      title: 'Rückgängig (Ctrl+Z)',
+      disabled: !editor.can().undo()
     },
     {
       icon: Redo,
       action: () => editor.chain().focus().redo().run(),
       isActive: false,
-      title: 'Wiederholen'
+      title: 'Wiederholen (Ctrl+Y)',
+      disabled: !editor.can().redo()
     }
   ]
 
@@ -162,12 +194,15 @@ export default function Editor({ content, onChange }: EditorProps) {
             <motion.button
               key={index}
               type="button"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: button.disabled ? 1 : 1.05 }}
+              whileTap={{ scale: button.disabled ? 1 : 0.95 }}
               onClick={button.action}
               title={button.title}
+              disabled={button.disabled}
               className={`p-2.5 rounded-xl transition-all ${
-                button.isActive
+                button.disabled
+                  ? 'opacity-30 cursor-not-allowed'
+                  : button.isActive
                   ? 'bg-gradient-to-r from-cyan-400 to-purple-500 text-white'
                   : 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white'
               }`}

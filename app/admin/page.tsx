@@ -176,8 +176,8 @@ export default function AdminPage() {
         return
       }
 
-      let imageUrl = ''
-      let fileUrl = ''
+      let imageUrl = editingPost?.image_url || ''
+      let fileUrl = editingPost?.file_url || ''
 
       if (image) {
         toast.loading('Komprimiere Bild...', { id: 'upload' })
@@ -191,7 +191,7 @@ export default function AdminPage() {
           .upload(imageName, compressedImage)
 
         if (imageUpload.error) {
-          toast.error(imageUpload.error.message)
+          toast.error(imageUpload.error.message, { id: 'upload' })
           return
         }
 
@@ -203,7 +203,7 @@ export default function AdminPage() {
       }
 
       if (file) {
-
+        toast.loading('Lade Datei hoch...', { id: 'upload' })
         const fileName = `${Date.now()}-${file.name}`
 
         const fileUpload = await supabase.storage
@@ -211,7 +211,7 @@ export default function AdminPage() {
           .upload(fileName, file)
 
         if (fileUpload.error) {
-          toast.error(fileUpload.error.message)
+          toast.error(fileUpload.error.message, { id: 'upload' })
           return
         }
 
@@ -230,17 +230,17 @@ export default function AdminPage() {
             title,
             description,
             category,
-            image_url: imageUrl || editingPost.image_url,
-            file_url: fileUrl || editingPost.file_url
+            image_url: imageUrl,
+            file_url: fileUrl
           })
           .eq('id', editingPost.id)
 
         if (update.error) {
-          toast.error(update.error.message)
+          toast.error(update.error.message, { id: 'upload' })
           return
         }
 
-        toast.success('Post aktualisiert')
+        toast.success('Post aktualisiert', { id: 'upload' })
         setEditingPost(null)
       } else {
         // Create new post
