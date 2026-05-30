@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { supabase } from '../../lib/supabase'
 import toast, { Toaster } from 'react-hot-toast'
-import { Edit2, Trash2, X, Upload, FileImage, FileArchive, Loader2 } from 'lucide-react'
+import { Edit2, Trash2, X, Upload, FileImage, FileArchive } from 'lucide-react'
 import Editor from '../components/Editor'
+import DeleteModal from '../components/DeleteModal'
 
 type Post = {
   id: number
@@ -45,6 +46,8 @@ export default function AdminPage() {
 
   const [posts, setPosts] = useState<Post[]>([])
   const [editingPost, setEditingPost] = useState<Post | null>(null)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [postToDelete, setPostToDelete] = useState<Post | null>(null)
 
   useEffect(() => {
 
@@ -280,6 +283,8 @@ export default function AdminPage() {
     setTitle(post.title)
     setDescription(post.description)
     setCategory(post.category || 'program')
+    setImage(null)
+    setFile(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -292,14 +297,18 @@ export default function AdminPage() {
     setFile(null)
   }
 
-  async function deletePost(id: number) {
-    const confirmed = confirm('Post löschen?')
-    if (!confirmed) return
+  function openDeleteModal(post: Post) {
+    setPostToDelete(post)
+    setDeleteModalOpen(true)
+  }
+
+  async function confirmDelete() {
+    if (!postToDelete) return
 
     const result = await supabase
       .from('posts')
       .delete()
-      .eq('id', id)
+      .eq('id', postToDelete.id)
 
     if (result.error) {
       toast.error('Fehler beim Löschen')
@@ -307,6 +316,7 @@ export default function AdminPage() {
     }
 
     toast.success('Post gelöscht')
+    setPostToDelete(null)
     fetchPosts()
   }
 
@@ -411,7 +421,14 @@ export default function AdminPage() {
 
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-10">
+        <DeleteModal
+          isOpen={deleteModalOpen}
+          onClose={() => setDeleteModalOpen(false)}
+          onConfirm={confirmDelete}
+          title={postToDelete?.title || ''}
+        />
+
+        <div className="grid lg:grid-cols-[1.5fr_1fr] gap-10">
 
           <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-8">
 
@@ -614,7 +631,7 @@ export default function AdminPage() {
                       Bearbeiten
                     </button>
                     <button
-                      onClick={() => deletePost(post.id)}
+                      onClick={() => openDeleteModal(post)}
                       className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-red-500 hover:bg-red-600 font-bold transition-colors"
                     >
                       <Trash2 size={18} />

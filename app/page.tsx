@@ -383,7 +383,8 @@ export default function HomePage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl overflow-auto"
+            className="fixed inset-0 z-50 bg-black/95 backdrop-blur-2xl overflow-auto"
+            onClick={() => setSelectedPost(null)}
           >
 
             <motion.div
@@ -391,78 +392,115 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 100 }}
               transition={{ type: "spring", damping: 25 }}
-              className="max-w-5xl mx-auto p-6 py-20"
+              className="max-w-6xl mx-auto p-6 py-20"
+              onClick={(e) => e.stopPropagation()}
             >
 
               <motion.button
-                whileHover={{ scale: 1.05 }}
+                whileHover={{ scale: 1.05, rotate: 90 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setSelectedPost(null)}
-                className="mb-10 px-6 py-3 rounded-2xl bg-white/10 border border-white/10 hover:bg-white/20 transition-colors"
+                className="mb-10 px-6 py-3 rounded-2xl bg-gradient-to-r from-white/10 to-white/5 border border-white/20 hover:border-cyan-400/50 transition-all backdrop-blur-xl font-bold"
               >
-                Schließen
+                ✕ Schließen
               </motion.button>
 
-              {selectedPost.image_url && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={selectedPost.image_url}
-                    alt={selectedPost.title}
-                    className="w-full rounded-3xl mb-10 max-h-[500px] object-cover"
-                  />
-                </motion.div>
-              )}
+              <div className="rounded-3xl border border-white/10 bg-gradient-to-b from-white/5 to-transparent backdrop-blur-xl overflow-hidden">
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="mb-6"
-              >
-                <span className="inline-block px-6 py-3 rounded-full bg-gradient-to-r from-cyan-400/20 to-purple-500/20 border border-cyan-400/30">
-                  {selectedPost.category === 'program' && '💻 Programm'}
-                  {selectedPost.category === 'tutorial' && '📚 Tutorial'}
-                  {selectedPost.category === 'apk' && '📱 APK'}
-                </span>
-              </motion.div>
+                {selectedPost.image_url && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="relative overflow-hidden"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={selectedPost.image_url}
+                      alt={selectedPost.title}
+                      className="w-full max-h-[600px] object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                  </motion.div>
+                )}
 
-              <motion.h1
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="text-5xl md:text-7xl font-black mb-8"
-              >
-                {selectedPost.title}
-              </motion.h1>
+                <div className="p-8 md:p-12">
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                className="text-xl text-gray-300 leading-relaxed mb-10 prose prose-invert prose-lg max-w-none"
-                dangerouslySetInnerHTML={{ __html: selectedPost.description }}
-              />
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="mb-8"
+                  >
+                    <span className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-cyan-400/20 to-purple-500/20 border border-cyan-400/40 backdrop-blur-xl text-lg font-semibold">
+                      {selectedPost.category === 'program' && '💻 Programm'}
+                      {selectedPost.category === 'tutorial' && '📚 Tutorial'}
+                      {selectedPost.category === 'apk' && '📱 APK'}
+                    </span>
+                  </motion.div>
 
-              {selectedPost.file_url && (
-                <motion.a
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  href={selectedPost.file_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block px-10 py-5 rounded-2xl bg-gradient-to-r from-cyan-400 to-purple-500 text-xl font-bold"
-                >
-                  Download öffnen
-                </motion.a>
-              )}
+                  <motion.h1
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="text-5xl md:text-7xl font-black mb-8 bg-gradient-to-r from-white via-white to-gray-400 bg-clip-text text-transparent leading-tight"
+                  >
+                    {selectedPost.title}
+                  </motion.h1>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="mb-12"
+                  >
+                    <div className="rounded-2xl border border-white/10 bg-black/30 backdrop-blur-xl p-8">
+                      <div 
+                        className="prose prose-invert prose-xl max-w-none
+                          prose-headings:font-black prose-headings:text-white prose-headings:mb-6
+                          prose-h1:text-5xl prose-h2:text-4xl prose-h3:text-3xl
+                          prose-p:text-gray-300 prose-p:leading-relaxed prose-p:mb-6
+                          prose-strong:text-white prose-strong:font-bold
+                          prose-em:text-gray-200 prose-em:italic
+                          prose-code:text-cyan-400 prose-code:bg-cyan-400/10 prose-code:px-3 prose-code:py-1 prose-code:rounded-lg prose-code:font-mono prose-code:text-base prose-code:before:content-none prose-code:after:content-none
+                          prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10 prose-pre:rounded-2xl prose-pre:p-6 prose-pre:overflow-x-auto
+                          prose-ul:text-gray-300 prose-ul:space-y-3 prose-ul:my-6
+                          prose-ol:text-gray-300 prose-ol:space-y-3 prose-ol:my-6
+                          prose-li:text-gray-300 prose-li:leading-relaxed
+                          prose-li:marker:text-cyan-400
+                          prose-blockquote:border-l-4 prose-blockquote:border-cyan-400 prose-blockquote:pl-6 prose-blockquote:italic prose-blockquote:text-gray-300 prose-blockquote:bg-cyan-400/5 prose-blockquote:py-4 prose-blockquote:rounded-r-xl
+                          prose-a:text-cyan-400 prose-a:no-underline prose-a:font-semibold hover:prose-a:text-cyan-300"
+                        dangerouslySetInnerHTML={{ __html: selectedPost.description }}
+                      />
+                    </div>
+                  </motion.div>
+
+                  {selectedPost.file_url && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6 }}
+                      className="flex justify-center"
+                    >
+                      <motion.a
+                        whileHover={{ scale: 1.05, boxShadow: "0 0 40px rgba(6,182,212,0.4)" }}
+                        whileTap={{ scale: 0.95 }}
+                        href={selectedPost.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-3 px-12 py-6 rounded-2xl bg-gradient-to-r from-cyan-400 to-purple-500 text-2xl font-black shadow-2xl shadow-cyan-400/20"
+                      >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Download öffnen
+                      </motion.a>
+                    </motion.div>
+                  )}
+
+                </div>
+
+              </div>
 
             </motion.div>
 
