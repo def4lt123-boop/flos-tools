@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { Search, ChevronDown, Calendar, ArrowUpDown } from 'lucide-react'
@@ -24,7 +24,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'alphabetical'>('newest')
-  const [scrollPosition, setScrollPosition] = useState(0)
+  const scrollPositionRef = useRef(0)
 
   useEffect(() => {
     async function loadPosts() {
@@ -103,13 +103,12 @@ export default function HomePage() {
   useEffect(() => {
     if (selectedPost) {
       // Save current scroll position
-      const currentScroll = window.scrollY
-      setScrollPosition(currentScroll)
+      scrollPositionRef.current = window.scrollY
       
       // Lock scroll
       document.body.style.overflow = 'hidden'
       document.body.style.position = 'fixed'
-      document.body.style.top = `-${currentScroll}px`
+      document.body.style.top = `-${scrollPositionRef.current}px`
       document.body.style.width = '100%'
     } else {
       // Restore scroll
@@ -119,7 +118,7 @@ export default function HomePage() {
       document.body.style.width = ''
       
       // Restore scroll position
-      window.scrollTo(0, scrollPosition)
+      window.scrollTo(0, scrollPositionRef.current)
     }
     
     return () => {
@@ -128,7 +127,7 @@ export default function HomePage() {
       document.body.style.top = ''
       document.body.style.width = ''
     }
-  }, [selectedPost, scrollPosition])
+  }, [selectedPost])
 
   return (
     <main className="min-h-screen bg-[#050816] text-white overflow-hidden">
