@@ -44,7 +44,7 @@ export default function AdminPage() {
   const [category, setCategory] = useState<'program' | 'tutorial' | 'apk'>('program')
 
   const [image, setImage] = useState<File | null>(null)
-  const [file, setFile] = useState<File | null>(null)
+  const [files, setFiles] = useState<File[]>([])
 
   const [posts, setPosts] = useState<Post[]>([])
   const [editingPost, setEditingPost] = useState<Post | null>(null)
@@ -81,12 +81,12 @@ export default function AdminPage() {
 
   // Track changes
   useEffect(() => {
-    if (title || description || image || file) {
+    if (title || description || image || files.length > 0) {
       setHasUnsavedChanges(true)
     } else {
       setHasUnsavedChanges(false)
     }
-  }, [title, description, image, file])
+  }, [title, description, image, files])
 
   async function checkUser() {
 
@@ -234,24 +234,31 @@ export default function AdminPage() {
         imageUrl = imageData.data.publicUrl
       }
 
-      if (file) {
-        toast.loading('Lade Datei hoch...', { id: 'upload' })
-        const fileName = `${Date.now()}-${file.name}`
+      if (files.length > 0) {
+        toast.loading(`Lade ${files.length} Datei(en) hoch...`, { id: 'upload' })
+        const uploadedUrls: string[] = []
 
-        const fileUpload = await supabase.storage
-          .from('files')
-          .upload(fileName, file)
+        for (const file of files) {
+          const fileName = `${Date.now()}-${file.name}`
 
-        if (fileUpload.error) {
-          toast.error(fileUpload.error.message, { id: 'upload' })
-          return
+          const fileUpload = await supabase.storage
+            .from('files')
+            .upload(fileName, file)
+
+          if (fileUpload.error) {
+            toast.error(fileUpload.error.message, { id: 'upload' })
+            return
+          }
+
+          const fileData = supabase.storage
+            .from('files')
+            .getPublicUrl(fileName)
+
+          uploadedUrls.push(fileData.data.publicUrl)
         }
 
-        const fileData = supabase.storage
-          .from('files')
-          .getPublicUrl(fileName)
-
-        fileUrl = fileData.data.publicUrl
+        // Join multiple URLs with a separator
+        fileUrl = uploadedUrls.join('|||')
       }
 
       if (editingPost) {
@@ -292,7 +299,7 @@ export default function AdminPage() {
         setDescription('')
         setCategory('program')
         setImage(null)
-        setFile(null)
+        setFiles([])
         fetchPosts()
       } else {
         // Create new post
@@ -318,7 +325,7 @@ export default function AdminPage() {
         setDescription('')
         setCategory('program')
         setImage(null)
-        setFile(null)
+        setFiles([])
         fetchPosts()
       }
 
@@ -334,7 +341,7 @@ export default function AdminPage() {
     setDescription(post.description)
     setCategory(post.category || 'program')
     setImage(null)
-    setFile(null)
+    setFiles([])
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -344,7 +351,7 @@ export default function AdminPage() {
     setDescription('')
     setCategory('program')
     setImage(null)
-    setFile(null)
+    setFiles([])
   }
 
   function openDeleteModal(post: Post) {
@@ -606,39 +613,74 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <p className="mb-3 text-gray-400">Datei / Programm / APK / ZIP</p>
+                <p className="mb-3 text-gray-400">Dateien / Programme / APKs / ZIPs (mehrere möglich)</p>
                 <input
                   ref={fileInputRef}
                   type="file"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  multiple
+                  onChange={(e) => {
+                    const newFiles = Array.from(e.target.files || [])
+                    setFiles(prev => [...prev, ...newFiles])
+                  }}
                   className="hidden"
                 />
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`w-full p-5 rounded-2xl border-2 border-dashed transition-all flex items-center gap-4 ${
-                    file
-                      ? 'border-purple-400/60 bg-purple-400/10'
-                      : 'border-white/20 bg-white/5 hover:border-purple-400/40 hover:bg-white/10'
-                  }`}
-                >
-                  <div className={`p-3 rounded-xl ${file ? 'bg-purple-400/20' : 'bg-white/10'}`}>
-                    <FileArchive size={22} className={file ? 'text-purple-400' : 'text-gray-400'} />
+                
+                {files.length === 0 ? (
+                  <motion.button
+                    type="button"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full p-5 rounded-2xl border-2 border-dashed border-white/20 bg-white/5 hover:border-purple-400/40 hover:bg-white/10 transition-all flex items-center gap-4"
+                  >
+                    <div className="p-3 rounded-xl bg-white/10">
+                      <FileArchive size={22} className="text-gray-400" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-gray-300">Dateien auswählen</p>
+                      <p className="text-xs text-gray-500 mt-0.5">EXE, APK, ZIP, PDF, ... (mehrere möglich)</p>
+                    </div>
+                    <div className="ml-auto">
+                      <Upload size={18} className="text-gray-400" />
+                    </div>
+                  </motion.button>
+                ) : (
+                  <div className="space-y-3">
+                    {files.map((file, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="p-4 rounded-xl border border-purple-400/40 bg-purple-400/10 flex items-center gap-3"
+                      >
+                        <div className="p-2 rounded-lg bg-purple-400/20">
+                          <FileArchive size={18} className="text-purple-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-purple-400 truncate">{file.name}</p>
+                          <p className="text-xs text-gray-400">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setFiles(prev => prev.filter((_, i) => i !== index))}
+                          className="p-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 transition-colors"
+                        >
+                          <X size={16} className="text-red-400" />
+                        </button>
+                      </motion.div>
+                    ))}
+                    <motion.button
+                      type="button"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full p-4 rounded-xl border border-dashed border-purple-400/40 bg-purple-400/5 hover:bg-purple-400/10 transition-all flex items-center justify-center gap-2 text-purple-400 font-semibold"
+                    >
+                      <Upload size={18} />
+                      Weitere Dateien hinzufügen
+                    </motion.button>
                   </div>
-                  <div className="text-left">
-                    <p className={`font-semibold ${file ? 'text-purple-400' : 'text-gray-300'}`}>
-                      {file ? file.name : 'Datei auswählen'}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : 'EXE, APK, ZIP, PDF, ...'}
-                    </p>
-                  </div>
-                  <div className="ml-auto">
-                    <Upload size={18} className="text-gray-400" />
-                  </div>
-                </motion.button>
+                )}
               </div>
 
               <button

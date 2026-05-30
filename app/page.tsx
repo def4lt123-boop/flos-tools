@@ -581,28 +581,68 @@ export default function HomePage() {
                     </div>
                   </motion.div>
 
-                  {selectedPost.file_url && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.6 }}
-                      className="flex justify-center"
-                    >
-                      <motion.a
-                        whileHover={{ scale: 1.05, boxShadow: "0 0 40px rgba(6,182,212,0.4)" }}
-                        whileTap={{ scale: 0.95 }}
-                        href={selectedPost.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-3 w-full sm:w-auto px-8 sm:px-12 py-5 sm:py-6 rounded-2xl bg-gradient-to-r from-cyan-400 to-purple-500 text-xl sm:text-2xl font-black shadow-2xl shadow-cyan-400/20 active:scale-95 transition-transform"
+                  {selectedPost.file_url && (() => {
+                    const fileUrls = selectedPost.file_url.split('|||').filter(url => url.trim())
+                    return fileUrls.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.6 }}
+                        className="space-y-4"
                       >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                        Download öffnen
-                      </motion.a>
-                    </motion.div>
-                  )}
+                        {fileUrls.length === 1 ? (
+                          <div className="flex justify-center">
+                            <motion.a
+                              whileHover={{ scale: 1.05, boxShadow: "0 0 40px rgba(6,182,212,0.4)" }}
+                              whileTap={{ scale: 0.95 }}
+                              href={fileUrls[0]}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center justify-center gap-3 w-full sm:w-auto px-8 sm:px-12 py-5 sm:py-6 rounded-2xl bg-gradient-to-r from-cyan-400 to-purple-500 text-xl sm:text-2xl font-black shadow-2xl shadow-cyan-400/20 active:scale-95 transition-transform"
+                            >
+                              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                              </svg>
+                              Download öffnen
+                            </motion.a>
+                          </div>
+                        ) : (
+                          <>
+                            <h3 className="text-2xl font-bold text-center mb-4">Downloads ({fileUrls.length})</h3>
+                            <div className="grid gap-3">
+                              {fileUrls.map((url, index) => {
+                                const fileName = url.split('/').pop()?.split('-').slice(1).join('-') || `Datei ${index + 1}`
+                                return (
+                                  <motion.a
+                                    key={index}
+                                    whileHover={{ scale: 1.02, x: 5 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    href={url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-r from-cyan-400/10 to-purple-500/10 border border-cyan-400/30 hover:border-cyan-400/60 transition-all group"
+                                  >
+                                    <div className="p-3 rounded-xl bg-cyan-400/20 group-hover:bg-cyan-400/30 transition-colors">
+                                      <svg className="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                      </svg>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-bold text-white truncate">{decodeURIComponent(fileName)}</p>
+                                      <p className="text-sm text-gray-400">Datei {index + 1} von {fileUrls.length}</p>
+                                    </div>
+                                    <svg className="w-5 h-5 text-cyan-400 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                  </motion.a>
+                                )
+                              })}
+                            </div>
+                          </>
+                        )}
+                      </motion.div>
+                    )
+                  })()}
 
                 </div>
 
