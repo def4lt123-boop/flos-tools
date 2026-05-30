@@ -3,23 +3,42 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from '../../lib/supabase'
+import toast, { Toaster } from 'react-hot-toast'
+import { Edit2, Trash2, X } from 'lucide-react'
+
+type Post = {
+  id: number
+  title: string
+  description: string
+  image_url: string
+  file_url: string
+  category: 'program' | 'tutorial' | 'apk'
+  created_at: string
+}
+
+type User = {
+  id: string
+  email: string
+}
 
 export default function AdminPage() {
 
   const [loading, setLoading] = useState(true)
 
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [category, setCategory] = useState<'program' | 'tutorial' | 'apk'>('program')
 
   const [image, setImage] = useState<File | null>(null)
   const [file, setFile] = useState<File | null>(null)
 
-  const [posts, setPosts] = useState<any[]>([])
+  const [posts, setPosts] = useState<Post[]>([])
+  const [editingPost, setEditingPost] = useState<Post | null>(null)
 
   useEffect(() => {
 
@@ -33,7 +52,7 @@ export default function AdminPage() {
     const { data } = await supabase.auth.getUser()
 
     if (data.user?.email === 'def4lt123@gmail.com') {
-      setUser(data.user)
+      setUser(data.user as User)
     }
 
     setLoading(false)
@@ -47,16 +66,16 @@ export default function AdminPage() {
     })
 
     if (error) {
-      alert(error.message)
+      toast.error(error.message)
       return
     }
 
     if (data.user.email !== 'def4lt123@gmail.com') {
-      alert('Kein Admin')
+      toast.error('Kein Admin')
       return
     }
 
-    setUser(data.user)
+    setUser(data.user as User)
   }
 
   async function logout() {
@@ -76,16 +95,16 @@ export default function AdminPage() {
     console.log(error)
 
     if (data) {
-      setPosts(data)
+      setPosts(data as Post[])
     }
   }
 
-  async function createPost() {
+  async function savePost() {
 
     try {
 
       if (!title || !description) {
-        alert('Bitte Titel und Beschreibung ausfüllen')
+        toast.error('Bitte Titel und Beschreibung ausfüllen')
         return
       }
 
@@ -100,10 +119,8 @@ export default function AdminPage() {
           .from('images')
           .upload(imageName, image)
 
-        console.log('IMAGE UPLOAD', imageUpload)
-
         if (imageUpload.error) {
-          alert(imageUpload.error.message)
+          toast.error(imageUpload.error.message)
           return
         }
 
@@ -122,10 +139,8 @@ export default function AdminPage() {
           .from('files')
           .upload(fileName, file)
 
-        console.log('FILE UPLOAD', fileUpload)
-
         if (fileUpload.error) {
-          alert(fileUpload.error.message)
+          toast.error(fileUpload.error.message)
           return
         }
 
@@ -136,45 +151,81 @@ export default function AdminPage() {
         fileUrl = fileData.data.publicUrl
       }
 
-      const insert = await supabase
-        .from('posts')
-        .insert([
-          {
+      if (editingPost) {
+        // Update existing post
+        const update = await supabase
+          .from('posts')
+          .update({
             title,
             description,
-            image_url: imageUrl,
-            file_url: fileUrl
-          }
-        ])
+            category,
+            image_url: imageUrl || editingPost.image_url,
+            file_url: fileUrl || editingPost.file_url
+          })
+          .eq('id', editingPost.id)
 
-      console.log('INSERT', insert)
+        if (update.error) {
+          toast.error(update.error.message)
+          return
+        }
 
-      if (insert.error) {
-        alert(insert.error.message)
-        return
+        toast.success('Post aktualisiert')
+        setEditingPost(null)
+      } else {
+        // Create new post
+        const insert = await supabase
+          .from('posts')
+          .insert([
+            {
+              title,
+              description,
+              category,
+              image_url: imageUrl,
+              file_url: fileUrl
+            }
+          ])
+
+        if (insert.error) {
+          toast.error(insert.error.message)
+          return
+        }
+
+        toast.success('Post erstellt')
       }
-
-      alert('Post erstellt')
 
       setTitle('')
       setDescription('')
+      setCategory('program')
       setImage(null)
       setFile(null)
 
       fetchPosts()
 
     } catch (err) {
-
       console.log(err)
-
-      alert('Fehler beim Upload')
+      toast.error('Fehler beim Upload')
     }
   }
 
+  function startEdit(post: Post) {
+    setEditingPost(post)
+    setTitle(post.title)
+    setDescription(post.description)
+    setCategory(post.category || 'program')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function cancelEdit() {
+    setEditingPost(null)
+    setTitle('')
+    setDescription('')
+    setCategory('program')
+    setImage(null)
+    setFile(null)
+  }
+
   async function deletePost(id: number) {
-
     const confirmed = confirm('Post löschen?')
-
     if (!confirmed) return
 
     const result = await supabase
@@ -182,8 +233,12 @@ export default function AdminPage() {
       .delete()
       .eq('id', id)
 
-    console.log(result)
+    if (result.error) {
+      toast.error('Fehler beim Löschen')
+      return
+    }
 
+    toast.success('Post gelöscht')
     fetchPosts()
   }
 
@@ -252,6 +307,8 @@ export default function AdminPage() {
 
     <main className="min-h-screen bg-[#050816] text-white p-5 md:p-10">
 
+      <Toaster position="top-right" />
+
       <div className="max-w-7xl mx-auto">
 
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-12">
@@ -275,11 +332,19 @@ export default function AdminPage() {
 
           <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-8">
 
-            <h2 className="text-3xl font-bold mb-8">
-
-              Neuer Beitrag
-
-            </h2>
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-3xl font-bold">
+                {editingPost ? 'Beitrag bearbeiten' : 'Neuer Beitrag'}
+              </h2>
+              {editingPost && (
+                <button
+                  onClick={cancelEdit}
+                  className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              )}
+            </div>
 
             <div className="space-y-6">
 
@@ -299,6 +364,44 @@ export default function AdminPage() {
               />
 
               <div>
+                <p className="mb-3 text-gray-400">
+                  Kategorie
+                </p>
+                <div className="grid grid-cols-3 gap-3">
+                  <button
+                    onClick={() => setCategory('program')}
+                    className={`p-4 rounded-2xl border transition-all ${
+                      category === 'program'
+                        ? 'bg-gradient-to-r from-cyan-400 to-purple-500 border-transparent'
+                        : 'bg-black/30 border-white/10'
+                    }`}
+                  >
+                    Programm
+                  </button>
+                  <button
+                    onClick={() => setCategory('tutorial')}
+                    className={`p-4 rounded-2xl border transition-all ${
+                      category === 'tutorial'
+                        ? 'bg-gradient-to-r from-cyan-400 to-purple-500 border-transparent'
+                        : 'bg-black/30 border-white/10'
+                    }`}
+                  >
+                    Tutorial
+                  </button>
+                  <button
+                    onClick={() => setCategory('apk')}
+                    className={`p-4 rounded-2xl border transition-all ${
+                      category === 'apk'
+                        ? 'bg-gradient-to-r from-cyan-400 to-purple-500 border-transparent'
+                        : 'bg-black/30 border-white/10'
+                    }`}
+                  >
+                    APK
+                  </button>
+                </div>
+              </div>
+
+              <div>
 
                 <p className="mb-3 text-gray-400">
                   Bild hochladen
@@ -306,6 +409,7 @@ export default function AdminPage() {
 
                 <input
                   type="file"
+                  accept="image/*"
                   onChange={(e) => setImage(e.target.files?.[0] || null)}
                 />
 
@@ -325,10 +429,10 @@ export default function AdminPage() {
               </div>
 
               <button
-                onClick={createPost}
+                onClick={savePost}
                 className="w-full py-5 rounded-2xl bg-gradient-to-r from-cyan-400 to-purple-500 text-xl font-bold"
               >
-                Beitrag veröffentlichen
+                {editingPost ? 'Änderungen speichern' : 'Beitrag veröffentlichen'}
               </button>
 
             </div>
@@ -345,13 +449,12 @@ export default function AdminPage() {
               >
 
                 {post.image_url && (
-
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={post.image_url}
                     alt={post.title}
                     className="w-full h-56 object-cover"
                   />
-
                 )}
 
                 <div className="p-6">
@@ -360,16 +463,34 @@ export default function AdminPage() {
                     {post.title}
                   </h2>
 
-                  <p className="text-gray-400 mb-6 whitespace-pre-wrap">
+                  <p className="text-gray-400 mb-4 whitespace-pre-wrap line-clamp-3">
                     {post.description}
                   </p>
 
-                  <button
-                    onClick={() => deletePost(post.id)}
-                    className="px-6 py-3 rounded-2xl bg-red-500 font-bold"
-                  >
-                    Löschen
-                  </button>
+                  <div className="mb-6">
+                    <span className="inline-block px-4 py-2 rounded-full bg-gradient-to-r from-cyan-400/20 to-purple-500/20 border border-cyan-400/30 text-sm">
+                      {post.category === 'program' && '💻 Programm'}
+                      {post.category === 'tutorial' && '📚 Tutorial'}
+                      {post.category === 'apk' && '📱 APK'}
+                    </span>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => startEdit(post)}
+                      className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-blue-500 hover:bg-blue-600 font-bold transition-colors"
+                    >
+                      <Edit2 size={18} />
+                      Bearbeiten
+                    </button>
+                    <button
+                      onClick={() => deletePost(post.id)}
+                      className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-red-500 hover:bg-red-600 font-bold transition-colors"
+                    >
+                      <Trash2 size={18} />
+                      Löschen
+                    </button>
+                  </div>
 
                 </div>
 
